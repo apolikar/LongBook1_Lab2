@@ -92,7 +92,7 @@ jobs:
     # can be used to create a sequence 
     # otherwise those jobs will run simultaneously
     # in our case it will require Build job tasks to be fully done (successfully)
-    needs: [Build, TestingBuild]
+    needs: [TestingBuild]
     
     runs-on: ubuntu-latest
     

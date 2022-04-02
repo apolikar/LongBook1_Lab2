@@ -1,0 +1,157 @@
+# in yml comments represented with "#" character.
+# it is very important to use a proper indentation in yml
+
+# -------------------------------------
+# Githab Actions Basics.
+# LongBook 1.
+#
+# Copyleft(c) by Aleksejs Polikarpovs.
+# --------------------------------------
+
+
+# This name will represent our pipeline, it might be different from our .yml file name.
+# It is recommended to don't use any whitespaces in the name.
+name: CI-CD-demo-pipeline
+
+# we can create a global environment variable which will be accesable anywhere.
+env:
+  # environment variable to represent application name 
+  APPLICATION_NAME: "DemoCI_CD"
+  # environment variable to represent deploy version
+  # github.sha will return unique commit hash number
+  DEPLOY_PACKAGE_NAME: "demo-deploy-ver-${{ github.sha }}"
+  
+
+# identify when it will trigger the workflow
+# we might use ctrl + space to trigger autocomplete functionality.
+# it will show list of all events 
+on: 
+
+  # we specify to run on push event
+  push: 
+    # it will run only on push to the main branch
+    branches: [ main ]
+    
+  # same with the pull request
+  # we can use specify branches on new line with - 
+  pull_request:
+    branches: 
+      - main 
+    
+  # maunaully trigger workflow.
+  # on GitHub press "Run Workflow" button
+  workflow_dispatch:
+
+# Define some jobs that should run
+# we can think it as block of jobs to be executed
+jobs:
+  
+  # Build is a first job 
+  # we can think that build is a block of tasks to do 
+  # we can call this block of tasks as we want, for example my_testing etc.
+  Build:
+  
+    # each job will be executed on separate virtual machine which github will create
+    # basically github action will execute docker image which will run all steps in the current task 
+    # you can specify multiple "runners" for runs-on. In this case you need to put them in [] brackets 
+    runs-on: ubuntu-latest
+    
+    # create local environment variable 
+    env:
+      VAR1: "LOCAL VARIABLE 1"
+    
+    # steps are basically tasks to do
+    steps:
+      # select action to run 
+      - uses: actions/checkout@v3
+        
+        # name of our step
+      - name: Compile
+        # just a linux command in our case to print 
+        run: echo Imagine we are compling our code here!
+        
+      - name: Print local variable
+        # notice we printing variables different ways 
+        run: |
+          echo ${{ env.VAR1 }}
+          echo "$LOCAL_VAR"
+        
+        # this is another way how to declare local variable
+        env:
+          LOCAL_VAR: "LOCAL VARIABLE 2"   
+
+  DeployDev:
+    
+    name: Deploy to Dev
+    
+    # we can specify the logic when to run this job
+    # in our case we want to run DeployDev job if the main branch receives pull request event
+    if: github.event_name == 'pull_request'
+    
+    # specify which jobs need to be done to run a current job
+    # can be used to create a sequence 
+    # otherwise those jobs will run simultaneously
+    # in our case it will require Build job tasks to be fully done (successfully)
+    needs: [Build]
+    
+    runs-on: ubuntu-latest
+    
+    # give a name to our environment
+    environment:
+      name: Development
+      # specify url where application will be running in dev enviroment
+      url: 'http://dev.myapp.com'
+      
+    steps:
+      - name: Deploy
+        run: echo Your code is being deployed to dev.myapp.com!
+      
+        
+       
+# Our deployment to Staging environment job
+  DeployStaging:
+    name: Deploy to DeployStaging
+    
+    # it will run only if if we push to the main
+    if: github.event.ref == 'refs/heads/main'
+    needs: [ Build ]
+    runs-on: ubuntu-latest
+    environment:
+      name: Staging
+      url: 'http://test.myapp.com'
+    steps:
+      - name: Deploy
+        run: echo Your code is being deployed to staging at http://test.myapp.com
+  
+  
+  
+  # Our deployment to production job
+  DeployProduction:
+    name: Deploy to production
+    needs: [DeployStaging]
+    runs-on: ubuntu-latest
+    environment:
+      name: Production
+      url: 'http://www.myapp.com'
+    steps: 
+      - name: Deploy
+        # here we will use environment variable and print version being deployed 
+        run: |
+          echo "Application name: ${{ env.APPLICATION_NAME }}"
+          echo "Version number: ${{ env.DEPLOY_PACKAGE_NAME }}"
+          echo The app is live at http://www.myapp.com
+
+  
+  
+  # Test job 
+  TestingBuild:
+    name: Test build before Staging 
+    needs: [ Build ]
+    runs-on: ubuntu-latest
+    environment:
+      name: Testing
+    steps:
+      - name: Test
+        run: echo Imagine your build ${{ env.DEPLOY_PACKAGE_NAME}} being tested.
+
+       

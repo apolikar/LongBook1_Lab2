@@ -79,14 +79,22 @@ jobs:
         # this is another way how to declare local variable
         env:
           LOCAL_VAR: "LOCAL VARIABLE 2"   
+          
+          
+  # Test job 
+  TestingBuild:
+    name: Test build before Staging 
+    needs: [ Build ]
+    runs-on: ubuntu-latest
+    environment:
+      name: Testing
+    steps:
+      - name: Test
+        run: echo Imagine your build ${{ env.DEPLOY_PACKAGE_NAME}} being tested.
 
   DeployDev:
     
-    name: Deploy to Dev
-    
-    # we can specify the logic when to run this job
-    # in our case we want to run DeployDev job if the main branch receives pull request event
-    if: github.event_name == 'pull_request'
+    name: Deploy to De
     
     # specify which jobs need to be done to run a current job
     # can be used to create a sequence 
@@ -143,15 +151,6 @@ jobs:
 
   
   
-  # Test job 
-  TestingBuild:
-    name: Test build before Staging 
-    needs: [ Build ]
-    runs-on: ubuntu-latest
-    environment:
-      name: Testing
-    steps:
-      - name: Test
-        run: echo Imagine your build ${{ env.DEPLOY_PACKAGE_NAME}} being tested.
+ 
 
        
